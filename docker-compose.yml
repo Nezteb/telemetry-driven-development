@@ -1,0 +1,44 @@
+services:
+  tdd:
+    build:
+      context: .
+    depends_on:
+      - lgtm
+      - postgres
+    ports:
+      - 4000:4000 # Web
+    environment:
+      - PHX_HOST=localhost
+      - PORT=4000
+      - SECRET_KEY_BASE=ZOO9B3CQWdK/kjQmEFmvukqaXkcFpaH7AJItXjBVADrmMPiNr0ETM28TmH1/xVXj
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
+      # https://hexdocs.pm/opentelemetry_exporter/readme.html#os-environment
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://lgtm:4318
+
+  # LGTM includes a collector, so we don't follow example in OTel docs:
+  # https://opentelemetry.io/docs/languages/erlang/exporters/#setting-up-the-collector
+  lgtm:
+    image: grafana/otel-lgtm:0.11.5
+    ports:
+      - 3000:3000 # Grafana UI
+      - 4317:4317 # OTLP gRPC
+      - 4318:4318 # OTLP HTTP
+    volumes:
+      - lgtm_data:/data
+    environment:
+      # https://github.com/grafana/docker-otel-lgtm/#configuration
+      - ENABLE_LOGS_ALL=true
+
+  postgres:
+    image: postgres:17
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+volumes:
+  lgtm_data:
+  postgres_data:
